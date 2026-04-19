@@ -69,7 +69,8 @@ const PluckExtractor = {
   fromTitle(title) {
     if (!title) return null;
 
-    const noisePatterns = [
+    // Patterns safe to strip from the full title before splitting
+    const fullTitleNoise = [
       /\(official\s*(music\s*)?video\)/gi,
       /\[official\s*(music\s*)?video\]/gi,
       /\(official\s*audio\)/gi,
@@ -88,16 +89,38 @@ const PluckExtractor = {
       /\(visualizer\)/gi,
       /\(audio\)/gi,
       /\(remaster(ed)?\)/gi,
+      // Language tags: (ENG), (KOR), (ENG/CHN), (ENG SUB), etc.
+      /\(([A-Z]{2,3}[\s/]*)+\)/g,
+    ];
+
+    // Patterns to strip only from the title portion after a dash split
+    // (too aggressive to apply to the full string before splitting)
+    const titlePartNoise = [
+      /\bofficial\s*(music\s*)?video\b/gi,
+      /\bofficial\s*m\.?v\.?\b/gi,
+      /\bofficial\s*audio\b/gi,
+      /\bm\.?v\.?\b/gi,
+      /\blyrics?\b/gi,
     ];
 
     let cleaned = title;
-    for (const re of noisePatterns) cleaned = cleaned.replace(re, '');
+    for (const re of fullTitleNoise) cleaned = cleaned.replace(re, '');
     cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
 
-    // "Artist - Title" or "Title - Artist" (dash/em-dash/en-dash)
+    // "Artist - Title" or "Title - Artist"
     const dashMatch = cleaned.match(/^(.+?)\s*[-–—]\s*(.+)$/);
     if (dashMatch) {
-      return { artist: dashMatch[1].trim(), title: dashMatch[2].trim() };
+      const artist = dashMatch[1].trim();
+      let songTitle = dashMatch[2].trim();
+
+      // Strip additional noise that's only safe to remove once we know it's the title part
+      for (const re of titlePartNoise) songTitle = songTitle.replace(re, '');
+
+      // Strip surrounding quotes: 'ONLY' → ONLY, "Song" → Song
+      songTitle = songTitle.replace(/^['"''""]+|['"''""]+$/g, '').trim();
+      songTitle = songTitle.replace(/\s{2,}/g, ' ').trim();
+
+      if (songTitle) return { artist, title: songTitle };
     }
 
     // "Title by Artist"
