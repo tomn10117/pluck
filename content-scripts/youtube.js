@@ -118,7 +118,10 @@
       return;
     }
 
-    const result = await chrome.runtime.sendMessage({ type: 'IDENTIFY_SONG', metadata });
+    const result = await Promise.race([
+      chrome.runtime.sendMessage({ type: 'IDENTIFY_SONG', metadata }),
+      sleep(12000).then(() => null),
+    ]);
 
     if (videoId !== currentVideoId) return;
 

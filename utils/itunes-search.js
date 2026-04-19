@@ -40,14 +40,23 @@ function flattenArtist(artist) {
 }
 
 async function fetchBestMatch(term, originalArtist) {
-  const url = `${ITUNES_API}?${new URLSearchParams({ term, media: 'music', entity: 'song', limit: 5 })}`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
 
-  const data = await res.json();
-  if (!data.results?.length) return null;
+  try {
+    const url = `${ITUNES_API}?${new URLSearchParams({ term, media: 'music', entity: 'song', limit: 5 })}`;
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) return null;
 
-  return bestMatch(data.results, originalArtist);
+    const data = await res.json();
+    if (!data.results?.length) return null;
+
+    return bestMatch(data.results, originalArtist);
+  } catch {
+    return null; // AbortError or network failure — try next query
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function bestMatch(results, artist) {
