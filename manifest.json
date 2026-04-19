@@ -28,7 +28,7 @@
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*", "*://music.youtube.com/*"],
-      "js": ["content-scripts/youtube.js"],
+      "js": ["utils/metadata-extractor.js", "content-scripts/youtube.js"],
       "css": ["overlay/overlay.css"],
       "run_at": "document_idle"
     },
@@ -43,10 +43,5 @@
     "default_title": "Pluck"
   },
 
-  "web_accessible_resources": [
-    {
-      "resources": ["overlay/overlay.html"],
-      "matches": ["*://*.youtube.com/*", "*://music.youtube.com/*"]
-    }
-  ]
+  "web_accessible_resources": []
 }

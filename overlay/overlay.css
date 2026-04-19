@@ -1,1 +1,132 @@
-/* Floating pill overlay injected into YouTube page */
+#pluck-overlay {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 99999;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#pluck-overlay.pluck-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+}
+
+.pluck-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(22, 22, 24, 0.88);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 10px 12px 10px 10px;
+  min-width: 260px;
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+/* Album art */
+.pluck-art {
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #2c2c2e;
+}
+
+/* Text */
+.pluck-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pluck-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff;
+}
+
+.pluck-artist {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Shared button base */
+.pluck-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+/* Add button */
+.pluck-add {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fc3c44; /* Apple Music red */
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.pluck-add:hover { background: #e0353c; }
+
+/* Dismiss button */
+.pluck-dismiss {
+  width: 20px;
+  height: 20px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.pluck-dismiss:hover { color: rgba(255, 255, 255, 0.7); }
+
+/* ─── States ─────────────────────────────────────────── */
+
+/* Loading: pulse the title text */
+#pluck-overlay[data-state="loading"] .pluck-title::after {
+  content: 'Identifying…';
+  color: rgba(255, 255, 255, 0.4);
+}
+#pluck-overlay[data-state="loading"] .pluck-add {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Adding: spinner-ish, disable button */
+#pluck-overlay[data-state="adding"] .pluck-add {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Added: green check */
+#pluck-overlay[data-state="added"] .pluck-add {
+  background: #30d158;
+  font-size: 15px;
+}
+#pluck-overlay[data-state="added"] .pluck-add::after {
+  content: '✓';
+}
+
+/* Error: red flash */
+#pluck-overlay[data-state="error"] .pluck-add {
+  background: #ff453a;
+}
