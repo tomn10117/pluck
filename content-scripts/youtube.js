@@ -3,6 +3,9 @@
 (function () {
   'use strict';
 
+  // Defined first — const is NOT hoisted, placing it at the bottom caused a ReferenceError.
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
   let currentVideoId = null;
   let overlayEl = null;
 
@@ -17,7 +20,7 @@
       <div class="pluck-content">
         <img class="pluck-art" src="" alt="" />
         <div class="pluck-info">
-          <div class="pluck-title"></div>
+          <div class="pluck-title">Identifying…</div>
           <div class="pluck-artist"></div>
         </div>
         <button class="pluck-btn pluck-add" title="Add to Apple Music">+</button>
@@ -33,13 +36,23 @@
   function show(state, track) {
     const el = getOverlay();
     el.dataset.state = state;
-    el.className = '';
+    el.className = ''; // visible
 
     if (track) {
       el.querySelector('.pluck-art').src = track.artworkUrl100?.replace('100x100', '60x60') ?? '';
       el.querySelector('.pluck-title').textContent = track.trackName ?? '';
       el.querySelector('.pluck-artist').textContent = track.artistName ?? '';
       el._track = track;
+    } else if (state === 'loading') {
+      el.querySelector('.pluck-art').src = '';
+      el.querySelector('.pluck-title').textContent = 'Identifying…';
+      el.querySelector('.pluck-artist').textContent = '';
+      el._track = null;
+    } else if (state === 'not-found') {
+      el.querySelector('.pluck-art').src = '';
+      el.querySelector('.pluck-title').textContent = 'No match found';
+      el.querySelector('.pluck-artist').textContent = '';
+      el._track = null;
     }
   }
 
@@ -71,43 +84,48 @@
   async function identifyVideo(videoId) {
     if (videoId !== currentVideoId) return;
 
-    // Layer 1: Content ID DOM section
+    show('loading', null);
+
+    // Layer 1: YouTube Content ID "Music in this video" DOM section
     let metadata = PluckExtractor.fromContentID();
 
-    // Layer 2: ytInitialPlayerResponse (only worth trying if it looks like music)
+    // Layer 2: ytInitialPlayerResponse via injected page-context script
     if (!metadata) {
       const pageData = await PluckExtractor.fromPageData();
-      if (pageData) {
-        if (pageData.category === 'Music') {
-          metadata = PluckExtractor.fromTitle(pageData.rawTitle) ?? { rawTitle: pageData.rawTitle };
-        } else if (pageData.rawTitle) {
-          // Still try title parsing even without the "Music" category
-          metadata = PluckExtractor.fromTitle(pageData.rawTitle);
-        }
+      if (pageData?.rawTitle) {
+        metadata = pageData.category === 'Music'
+          ? (PluckExtractor.fromTitle(pageData.rawTitle) ?? { rawTitle: pageData.rawTitle })
+          : PluckExtractor.fromTitle(pageData.rawTitle);
       }
     }
 
-    // Layer 3: Visible page title as last resort
+    // Layer 3: visible h1 title on the page
     if (!metadata) {
-      const titleEl = document.querySelector(
-        'h1.ytd-video-primary-info-renderer yt-formatted-string, ytd-watch-metadata h1 yt-formatted-string, #title h1'
-      );
+      const titleEl = document.querySelector([
+        'ytd-watch-metadata h1 yt-formatted-string',
+        '#above-the-fold #title h1 yt-formatted-string',
+        'h1.ytd-video-primary-info-renderer yt-formatted-string',
+        '#title h1',
+      ].join(', '));
       const raw = titleEl?.textContent?.trim();
       if (raw) metadata = PluckExtractor.fromTitle(raw);
     }
 
-    if (!metadata || videoId !== currentVideoId) return;
+    if (videoId !== currentVideoId) return;
 
-    show('loading', null);
+    if (!metadata) {
+      show('not-found', null);
+      return;
+    }
 
     const result = await chrome.runtime.sendMessage({ type: 'IDENTIFY_SONG', metadata });
 
-    if (videoId !== currentVideoId) return; // navigated away while waiting
+    if (videoId !== currentVideoId) return;
 
     if (result?.found) {
       show('found', result.track);
     } else {
-      hide();
+      show('not-found', null);
     }
   }
 
@@ -120,18 +138,16 @@
     currentVideoId = videoId;
     hide();
 
-    // Delay to let the DOM settle after YouTube's SPA navigation
     sleep(1800).then(() => identifyVideo(videoId));
   }
 
   document.addEventListener('yt-navigate-finish', onNavigate);
 
-  // Handle hard page loads (direct URL or refresh)
+  // Hard page load — direct URL visit or refresh
   const initialId = new URLSearchParams(location.search).get('v');
   if (initialId) {
     currentVideoId = initialId;
     sleep(2200).then(() => identifyVideo(initialId));
   }
 
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
 })();

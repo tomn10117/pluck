@@ -101,9 +101,8 @@
 
 /* ─── States ─────────────────────────────────────────── */
 
-/* Loading: pulse the title text */
-#pluck-overlay[data-state="loading"] .pluck-title::after {
-  content: 'Identifying…';
+/* Loading */
+#pluck-overlay[data-state="loading"] .pluck-title {
   color: rgba(255, 255, 255, 0.4);
 }
 #pluck-overlay[data-state="loading"] .pluck-add {
@@ -111,7 +110,16 @@
   pointer-events: none;
 }
 
-/* Adding: spinner-ish, disable button */
+/* Not found */
+#pluck-overlay[data-state="not-found"] .pluck-title {
+  color: rgba(255, 255, 255, 0.4);
+}
+#pluck-overlay[data-state="not-found"] .pluck-add {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Adding */
 #pluck-overlay[data-state="adding"] .pluck-add {
   opacity: 0.5;
   pointer-events: none;
@@ -126,7 +134,7 @@
   content: '✓';
 }
 
-/* Error: red flash */
+/* Error */
 #pluck-overlay[data-state="error"] .pluck-add {
   background: #ff453a;
 }
