@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="header">
+    <span class="logo">🎵</span>
+    <span class="name">Pluck</span>
+  </div>
+
+  <div id="status-native" class="status hidden">
+    <span class="dot green"></span>
+    Native Music app connected
+  </div>
+  <div id="status-browser" class="status hidden">
+    <span class="dot yellow"></span>
+    Using browser fallback (music.apple.com)
+  </div>
+
+  <div id="setup-section" class="hidden">
+    <p class="hint">
+      Connect to your native Music app in 3 steps:
+    </p>
+    <ol class="steps">
+      <li>Click <strong>Download installer</strong> below</li>
+      <li>Run in Terminal: <code>bash ~/Downloads/pluck-install.sh</code></li>
+      <li>Click <strong>Reload</strong> in chrome://extensions</li>
+    </ol>
+    <button id="download-btn">Download installer</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

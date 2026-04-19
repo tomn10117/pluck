@@ -1,5 +1,7 @@
 import { searchAppleMusic } from '../utils/itunes-search.js';
 
+const NATIVE_HOST = 'com.pluck.host';
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'IDENTIFY_SONG') {
     identifySong(msg.metadata)
@@ -17,27 +19,49 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 async function identifySong(metadata) {
-  // Try with extracted artist + title first (most accurate)
   if (metadata.artist && metadata.title) {
     const track = await searchAppleMusic(metadata.artist, metadata.title);
     if (track) return { found: true, track };
   }
 
-  // Try with just the cleaned raw title
   if (metadata.rawTitle) {
     const track = await searchAppleMusic(null, metadata.rawTitle);
     if (track) return { found: true, track };
   }
 
-  // TODO: AudD audio fingerprint fallback (handles Vietnamese reuploads, unlabeled videos)
-  // const { identifyFromTab } = await import('../utils/audd.js');
-  // const track = await identifyFromTab(sender.tab.id);
-  // if (track) return { found: true, track };
-
+  // TODO: AudD audio fingerprint fallback
   return { found: false };
 }
 
 async function addToLibrary(track) {
+  // Prefer native Music app if the host is installed
+  try {
+    const result = await sendNativeMessage({ type: 'ADD_SONG', ...track });
+    if (result?.success) return { success: true };
+  } catch (_) {
+    // Host not installed — fall through to browser fallback
+  }
+
+  return addViaBrowser(track);
+}
+
+// ─── Native messaging ─────────────────────────────────────────────────────
+
+function sendNativeMessage(msg) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendNativeMessage(NATIVE_HOST, msg, response => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve(response);
+      }
+    });
+  });
+}
+
+// ─── Browser fallback (music.apple.com) ──────────────────────────────────
+
+async function addViaBrowser(track) {
   const existing = await chrome.tabs.query({ url: '*://music.apple.com/*' });
 
   let tab;
@@ -49,12 +73,11 @@ async function addToLibrary(track) {
     tab = await chrome.tabs.create({ url: 'https://music.apple.com', active: false });
     openedTab = true;
     await waitForTabLoad(tab.id);
-    await sleep(800); // let content script initialize
+    await sleep(800);
   }
 
   try {
-    const result = await sendMessageWithRetry(tab.id, { type: 'ADD_SONG', trackId: String(track.trackId) }, 3);
-    return result;
+    return await sendMessageWithRetry(tab.id, { type: 'ADD_SONG', trackId: String(track.trackId) }, 3);
   } finally {
     if (openedTab) {
       await sleep(1000);
@@ -62,6 +85,8 @@ async function addToLibrary(track) {
     }
   }
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
 
 function waitForTabLoad(tabId) {
   return new Promise(resolve => {
