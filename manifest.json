@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "Pluck",
+  "version": "0.1.0",
+  "description": "Identify songs playing on YouTube and add them to your Apple Music library.",
+
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "tabCapture",
+    "storage"
+  ],
+
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://music.youtube.com/*",
+    "*://music.apple.com/*",
+    "*://itunes.apple.com/*",
+    "*://api.audd.io/*"
+  ],
+
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*", "*://music.youtube.com/*"],
+      "js": ["content-scripts/youtube.js"],
+      "css": ["overlay/overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://music.apple.com/*"],
+      "js": ["content-scripts/apple-music.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_title": "Pluck"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["overlay/overlay.html"],
+      "matches": ["*://*.youtube.com/*", "*://music.youtube.com/*"]
+    }
+  ]
+}
