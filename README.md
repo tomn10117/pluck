@@ -53,13 +53,22 @@ YouTube video playing
 
 ## Setup
 
-### 1. Load the extension
+> Pluck isn't on the Chrome Web Store — you load it directly from source.
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/tomn10117/pluck.git
+cd pluck
+```
+
+### 2. Load the extension in Chrome
 
 ```
-chrome://extensions → Developer mode ON → Load unpacked → select /pluck
+chrome://extensions → Developer mode ON → Load unpacked → select the cloned /pluck folder
 ```
 
-### 2. Connect to native Music.app (recommended, one-time)
+### 3. Connect to native Music.app (recommended, one-time)
 
 Click the **Pluck icon** in your Chrome toolbar → **Download installer**, then:
 
